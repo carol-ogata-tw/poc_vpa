@@ -1,6 +1,7 @@
 datadog:
   site: datadoghq.com                  # use datadoghq.eu if you're in the EU
   apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
   clusterName: my-cluster          # change this to your actual EKS cluster name
 
   logs:
@@ -27,3 +28,10 @@ clusterAgent:
   enabled: true
   metricsProvider:
     enabled: true                      # needed for HPA/VPA using external metrics
+  confd:
+      # Esta configuração diz ao Cluster Agent para procurar o serviço do VPA Recommender
+      # e coletar métricas de seu endpoint /metrics.
+      vpa-recommender.yaml: |-
+        cluster_check: true
+        instances:
+          - openmetrics_endpoint: http://%%host%%:8942/metrics

@@ -1,0 +1,76 @@
+---
+# =========================================================================
+# Workload 4: Stateful Database
+#
+# Type: StatefulSet
+# Goal: To test VPA's ability to right-size a stateful workload and
+#       observe its restart behavior.
+# This deploys a single-replica PostgreSQL database that requires
+# persistent storage.
+# Pre-requisite: Your EKS cluster must have a default StorageClass
+# defined so it can provision a PersistentVolume.
+# =========================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  labels:
+    app: postgres
+spec:
+  ports:
+    - port: 5432
+      name: web
+  clusterIP: None
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-db
+spec:
+  serviceName: "postgres-headless"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: postgres
+        image: postgres:15.3-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres-db
+        env:
+        - name: POSTGRES_USER
+          value: "user"
+        - name: POSTGRES_PASSWORD
+          value: "mysecretpassword" # Use secrets in a real environment
+        - name: POSTGRES_DB
+          value: "testdb"
+        # --- VPA TARGET ---
+        # VPA will observe the database's typical resource usage and
+        # recommend more appropriate values.
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi # Request 2 GiB of persistent storage

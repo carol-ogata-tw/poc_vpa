@@ -1,0 +1,63 @@
+---
+# =========================================================================
+# Workload 3: Memory-Leaking Application
+#
+# Type: Deployment
+# Goal: To understand VPA's limitations and see how it reacts to a
+#       buggy application. This tests the importance of setting a
+#       'maxAllowed' policy in your VPA object later.
+#
+# !! ACTION REQUIRED !!
+# You must build and push this Docker image to your own container
+# registry (e.g., Amazon ECR) and update the 'image:' field below.
+#
+# 1. Create a file named 'app.js':
+#   const http = require('http');
+#   const leak = [];
+#   http.createServer((req, res) => {
+#     // Add ~1MB of strings to the array on each request to simulate a leak
+#     leak.push(Buffer.alloc(1024 * 1024, 'x'));
+#     res.writeHead(200, { 'Content-Type': 'text/plain' });
+#     res.end(`Leaking memory... Current size: ${leak.length} MB\n`);
+#   }).listen(8080);
+#   console.log('Memory leak server running on port 8080');
+#
+# 2. Create a file named 'Dockerfile':
+#   FROM node:18-alpine
+#   WORKDIR /app
+#   COPY app.js .
+#   CMD ["node", "app.js"]
+#
+# 3. Build and push the image:
+#   docker build -t your-registry/memory-leak-app:latest .
+#   docker push your-registry/memory-leak-app:latest
+# =========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-leak-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memory-leak
+  template:
+    metadata:
+      labels:
+        app: memory-leak
+    spec:
+      containers:
+      - name: memory-leak-container
+        # !!! REPLACE THIS with your own image URL from Amazon ECR or another registry !!!
+        image: your-registry/memory-leak-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        # --- VPA TARGET ---
+        # The pod will be OOMKilled when it exceeds its limit. VPA will
+        # observe this and continuously recommend higher memory requests.
+        resources:
+          requests:
+            memory: "50Mi"
+          limits:
+            memory: "200Mi" # The pod will crash when it hits this limit

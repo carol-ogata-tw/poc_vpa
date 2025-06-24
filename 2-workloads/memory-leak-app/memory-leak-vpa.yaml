@@ -1,0 +1,23 @@
+---
+# =========================================================================
+# Alvo: O Deployment 'memory-leak-app'.
+# =========================================================================
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: memory-leak-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind:       Deployment
+    name:       memory-leak-app
+  updatePolicy:
+    updateMode: "Off" # Apenas recomenda.
+  resourcePolicy:
+    containerPolicies:
+      - containerName: '*'
+        # IMPORTANTE: Definimos um limite máximo para evitar que o VPA
+        # recomende uma quantidade infinita de memória para uma aplicação com bug.
+        maxAllowed:
+          cpu: "1"
+          memory: "1Gi"

@@ -1,0 +1,39 @@
+---
+# =========================================================================
+# Workload 2: CPU-Intensive Batch Job
+#
+# Type: Job
+# Goal: To observe how VPA recommends resources for short-lived,
+#       CPU-bound tasks.
+# This job calculates Pi to 2000 places using Perl. It will consume a
+# burst of CPU and then terminate.
+# =========================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi-calculation-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: pi-job
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+        # --- VPA TARGET ---
+        # The request is low. VPA will observe the actual peak CPU usage
+        # during the calculation and recommend a more appropriate value.
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "100Mi"
+          limits:
+            cpu: "1000m" # Allow it to burst
+            memory: "200Mi"
+      restartPolicy: Never
+  backoffLimit: 4
+  # Note: To test VPA recommendations for this job, you may need to
+  # run it multiple times to generate history. A CronJob is a more
+  # realistic scenario for applying VPA to recurring batch tasks.

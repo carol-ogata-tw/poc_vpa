@@ -1,0 +1,20 @@
+# =========================================================================
+# Alvo: O CronJob 'pi-calculation-cronjob'.
+# O VPA irá observar os Pods que este CronJob cria e fará as recomendações
+# com base no uso histórico deles.
+# =========================================================================
+apiVersion: "autoscaling.k8s.io/v1"
+kind: VerticalPodAutoscaler
+metadata:
+  name: pi-job-vpa
+spec:
+  # O targetRef agora aponta diretamente para o CronJob.
+  targetRef:
+    # A apiVersion para CronJob é 'batch/v1'
+    apiVersion: "batch/v1"
+    # O tipo do recurso é 'CronJob'
+    kind:       CronJob
+    # O nome deve corresponder exatamente ao nome do seu CronJob
+    name:       pi-calculation-cronjob
+  updatePolicy:
+    updateMode: "Off" # Apenas recomenda.

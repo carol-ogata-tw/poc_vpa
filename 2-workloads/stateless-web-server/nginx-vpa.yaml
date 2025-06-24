@@ -1,0 +1,14 @@
+# =========================================================================
+# Alvo: O Deployment 'stateless-nginx'.
+# =========================================================================
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: nginx-vpa
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind:       Deployment
+    name:       stateless-nginx
+  updatePolicy:
+    updateMode: "Off" # Apenas recomenda, não aplica automaticamente.

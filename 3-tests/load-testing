@@ -1,0 +1,107 @@
+# =========================================================================
+# Option 1: k6 Load Testing Script (Recommended & Most Flexible)
+#
+# Tool: k6 (https://k6.io/docs/getting-started/installation/)
+# This single script can simulate baseline, peak, and spike loads.
+#
+# How to run:
+# 1. Install k6.
+# 2. Save the JavaScript code below as `load-test.js`.
+# 3. Replace 'YOUR_NGINX_URL_HERE' with the URL you got above.
+# 4. Run the script from your terminal: k6 run load-test.js
+# =========================================================================
+
+# File: load-test.js
+# --------------------
+import http from 'k6/http';
+import { sleep } from 'k6';
+
+// --- Configuration ---
+// Replace this with the External IP/Hostname of your nginx-load-balancer service
+const NGINX_URL = 'http://YOUR_NGINX_URL_HERE'; 
+
+export const options = {
+  stages: [
+    // --- Scenario 1: Baseline Load ---
+    // Stay at a low, steady rate for 10 minutes to establish a baseline.
+    { duration: '10m', target: 50 }, // 50 virtual users, ~50 requests/sec
+
+    // --- Scenario 2: Peak Load ---
+    // Ramp up to a high load and sustain it for 5 minutes.
+    { duration: '2m', target: 400 }, // Ramp up to 400 users over 2 minutes
+    { duration: '5m', target: 400 }, // Stay at 400 users for 5 minutes
+
+    // --- Scenario 3: Spike Load ---
+    // A sudden, massive, short-lived burst.
+    { duration: '30s', target: 1000 }, // Spike to 1000 users over 30 seconds
+    { duration: '1m', target: 1000 },  // Stay at 1000 users for 1 minute
+    { duration: '30s', target: 50 },   // Recover back to baseline
+
+    // --- Scenario 4: Idle / Off-Hours ---
+    // Drop to a very low level of traffic for 10 minutes.
+    { duration: '2m', target: 5 },   // Ramp down to almost idle
+    { duration: '10m', target: 5 },  // Stay at a low level
+  ],
+  thresholds: {
+    // We expect some failures during extreme load, so we won't fail the whole test.
+    // A 95% success rate is acceptable for this POC test.
+    'http_req_failed': ['rate<0.05'], 
+  },
+};
+
+export default function () {
+  http.get(NGINX_URL);
+  sleep(1); // Each virtual user will wait 1 second between requests
+}
+
+
+# =========================================================================
+# Option 2: 'hey' Load Testing Commands (Simpler)
+#
+# Tool: hey (https://github.com/rakyll/hey)
+# This is a simpler command-line tool. You run separate commands
+# for each scenario.
+#
+# How to run:
+# 1. Install 'hey'.
+# 2. Replace 'http://YOUR_NGINX_URL_HERE' with your service URL.
+# 3. Run the commands one after the other in your terminal.
+# =========================================================================
+
+# --- Scenario 1: Baseline Load ---
+# Send a steady load of 50 concurrent requests for 10 minutes (-z 10m).
+echo "Starting Baseline Load Test (10 minutes)..."
+hey -c 50 -z 10m http://YOUR_NGINX_URL_HERE
+
+# --- Scenario 2: Peak Load ---
+# Send a high load of 400 concurrent requests for 5 minutes.
+echo "Starting Peak Load Test (5 minutes)..."
+hey -c 400 -z 5m http://YOUR_NGINX_URL_HERE
+
+# --- Scenario 4: Idle / Off-Hours ---
+# Send a very low load of 5 concurrent requests for 10 minutes.
+echo "Starting Idle Period Simulation (10 minutes)..."
+hey -c 5 -z 10m http://YOUR_NGINX_URL_HERE
+
+
+# =========================================================================
+# Option 3: Memory Leak Test Command
+#
+# Tool: curl (already installed on most systems)
+# This test is for the memory-leaking application. We just need to hit
+# it repeatedly to make the memory usage grow.
+#
+# How to run:
+# 1. Expose the memory-leak-app on your local machine using port-forwarding.
+#    Run this in a separate terminal and leave it running:
+#    kubectl port-forward deployment/memory-leak-app 8080:8080
+#
+# 2. In another terminal, run the curl loop below.
+# =========================================================================
+
+echo "Starting memory leak simulation. Press [Ctrl+C] to stop."
+# This loop sends one request every second to the local port-forwarded service.
+while true; do
+  curl http://localhost:8080
+  sleep 1
+done

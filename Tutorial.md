@@ -8,10 +8,48 @@
 ```bash
 eksctl create cluster -f eks.yaml
 ```
+
 - Verify that you can connect to the cluster
 ```
 kubectl get svc
 ```
+
+# DATADOG
+
+```bash
+# Add the Datadog Helm repository
+helm repo add datadog https://helm.datadoghq.com 
+helm repo update OK
+
+# Create a namespace for Datadog (optional, but recommended):
+kubectl create namespace datadog 
+
+# Create your configuration file values.yaml
+kubectl create secret generic datadog-secret \
+  --from-literal api-key='xxx' \
+  --namespace datadog 
+
+kubectl create secret generic datadog-secret \
+--from-literal api-key='xxx' \
+--from-literal app_key='xxx' \
+-n datadog
+
+# Install the Datadog Agent using Helm
+helm install datadog-agent datadog/datadog \
+  --namespace datadog --create-namespace \
+  -f values.yaml
+
+# Upgrade the apiKey
+helm upgrade datadog-agent \
+        --set datadog.apiKey='xxxx' datadog/datadog\
+        --namespace datadog
+
+# You can verify that everything is running:
+kubectl get pods -n datadog
+
+# Also check logs if needed:
+kubectl logs -f daemonset/datadog-agent -n datadog
+````
 
 ## 2. Deploy Metrics server (YAML)
 
@@ -31,28 +69,16 @@ kubectl top pods -n kube-system
 ```
 
 - Access metrics API
-
 ```bash
 kubectl get --raw /apis/metrics.k8s.io/v1beta1 | jq
 ```
 
-- Create deployemnt files under `0-metrics-server` directory
-  - `0-service-account.yaml`
-  - `1-cluster-roles.yaml`
-  - `2-role-binding.yaml`
-  - `3-cluster-role-bindings.yaml`
-  - `4-service.yaml`
-  - `5-deployment.yaml`
-  - `6-api-service.yaml`
-
-- Apply created filies
-
+- Apply created files
 ```bash
 kubectl apply -f 0-metrics-server
 ```
 
 - Verify deployment
-
 ```bash
 kubectl get pods -n kube-system
 ```
@@ -61,6 +87,7 @@ kubectl get pods -n kube-system
 ```bash
 kubectl get apiservice
 ```
+
 - List services in `kube-system` namespace
 ```bash
 kubectl get svc -n kube-system
@@ -82,7 +109,7 @@ kubectl get --raw /apis/metrics.k8s.io/v1beta1/pods | jq
 kubectl top pods -n kube-system
 ```
 
-## 3. Deploy Metrics server (HELM)
+<!-- ## 3. Deploy Metrics server (HELM) -->
 
 <!-- - Find default values for metrics-server [chart](https://github.com/bitnami/charts/tree/master/bitnami/metrics-server)
 - Create `values.yaml` file
@@ -104,7 +131,7 @@ helm install metrics bitnami/metrics-server \
 --values values.yaml
 ``` -->
 
-## 3. Install Vertical Pod Autoscaler
+<!-- ## 3. Install Vertical Pod Autoscaler
 
 - Open Autoscaler GitHub [page](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
 
@@ -112,6 +139,7 @@ helm install metrics bitnami/metrics-server \
 ```bash
 git clone https://github.com/kubernetes/autoscaler.git
 ```
+
 - Change directory
 ```bash
 cd autoscaler/vertical-pod-autoscaler
@@ -128,7 +156,7 @@ cd autoscaler/vertical-pod-autoscaler
 - Tear down VPA
 ```bash
 ./hack/vpa-down.sh
-```
+``` -->
 
 ## 4. Upgrade LibreSSL on Mac/OS X
 
@@ -146,18 +174,22 @@ brew install libressl
 ```bash
 openssl version
 ```
+
 - Check instalation path of OpenSSL
 ```bash
 which openssl
 ```
+
 - Check version of the LibreSSL installed with Homebew
 ```bash
 /opt/homebrew/opt/libressl/bin/openssl version
 ```
+
 - Try to create a soft link
 ```bash
 sudo ln -s /opt/homebrew/opt/libressl/bin/openssl /usr/bin/openssl
 ```
+
 - Try to rename openssl
 ```bash
 sudo mv /usr/bin/openssl /usr/bin/openssl-old
@@ -173,19 +205,19 @@ sudo ln -s /opt/homebrew/opt/libressl/bin/openssl /usr/local/bin/openssl
 openssl version
 ```
 
-## 5. Install Vertical Pod Autoscaler (Continue)
+<!-- ## 5. Install Vertical Pod Autoscaler (Continue)
 
 - Open new tab and change directory
 ```bash
-cd Developer/autoscaler/vertical-pod-autoscaler
+cd autoscaler/vertical-pod-autoscaler
 ```
 
 - Install VPA
 ```bash
 ./hack/vpa-up.sh
-```
+``` -->
 
-## 6. Demo
+<!-- ## 6. Demo (or Workloads)
 - Create deployment files under `1-demo` directory
  - `0-deployment.yaml`
  - `1-vpa.yaml`
@@ -213,7 +245,34 @@ kubectl describe vpa hamster-vpa
 - Update deployment and reapply
 ```bash
 kubectl apply -f 1-demo/0-deployment.yaml
+``` -->
+
+## 7. Workloads
+
+- Deploy cpu-batch-job workload
+```bash
+kubectl apply -f 2-workloads/cpu-batch-job/pi-cronjob.yaml
 ```
+
+- Build, push the image and deploy memory-leak-app
+```bash
+docker build -t poc-ecr/memory-leak-app:latest .
+docker push poc-ecr/memory-leak-app:latest 
+
+kubectl apply -f 2-workloads/memory-leak-app/deployment.yaml
+```
+
+- Deploy Stateful-db
+```bash
+kubectl apply -f 2-workloads/stateful-db/deployment.yaml
+```
+
+- Deploy Stateless-web-server
+```bash
+kubectl apply -f 2-workloads/stateless-web-server/deployment.yaml
+```
+
+# VPAs
 
 ## Clean Up
 - Delete EKS cluster
