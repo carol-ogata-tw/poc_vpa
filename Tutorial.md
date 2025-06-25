@@ -4,19 +4,20 @@
 
 ## 1. Create EKS Cluster Using eksctl
 
-- Create EKS cluster
 ```bash
+
+# Create EKS cluster
 eksctl create cluster -f eks.yaml
-```
 
-- Verify that you can connect to the cluster
-```
+# Verify that you can connect to the cluster
 kubectl get svc
+
 ```
 
-# DATADOG
+## 2. Deploy Datadog Agent
 
 ```bash
+
 # Add the Datadog Helm repository
 helm repo add datadog https://helm.datadoghq.com 
 helm repo update OK
@@ -25,10 +26,6 @@ helm repo update OK
 kubectl create namespace datadog 
 
 # Create your configuration file values.yaml
-kubectl create secret generic datadog-secret \
-  --from-literal api-key='xxx' \
-  --namespace datadog 
-
 kubectl create secret generic datadog-secret \
 --from-literal api-key='xxx' \
 --from-literal app_key='xxx' \
@@ -49,64 +46,47 @@ kubectl get pods -n datadog
 
 # Also check logs if needed:
 kubectl logs -f daemonset/datadog-agent -n datadog
-````
 
-## 2. Deploy Metrics server (YAML)
-
-- List api services
-```bash
-kubectl get apiservice
 ```
 
-- Use grep and filter by `metrics`
+## 3. Deploy Metrics server (YAML)
+
+
 ```bash
+
+# List api services
+kubectl get apiservice
+
+# Use grep and filter by `metrics`
 kubectl get apiservice | grep metrics
-```
 
-- Use kubectl to get metrics
-```bash
+# Use kubectl to get metrics
 kubectl top pods -n kube-system
-```
 
-- Access metrics API
-```bash
+# Access metrics API
 kubectl get --raw /apis/metrics.k8s.io/v1beta1 | jq
-```
 
-- Apply created files
-```bash
+# Apply created files
 kubectl apply -f 0-metrics-server
-```
 
-- Verify deployment
-```bash
+# Verify deployment
 kubectl get pods -n kube-system
-```
 
-- List api services
-```bash
+# List api services
 kubectl get apiservice
-```
 
-- List services in `kube-system` namespace
-```bash
+# List services in `kube-system` namespace
 kubectl get svc -n kube-system
-```
 
-- Access metrics API
-
-```bash
+# Access metrics API
 kubectl get --raw /apis/metrics.k8s.io/v1beta1 | jq
-```
 
-- Get metrics for pods using raw command\
-```bash
+# Get metrics for pods using raw command
 kubectl get --raw /apis/metrics.k8s.io/v1beta1/pods | jq
-```
 
-- Use kubectl to get metrics
-```bash
+# Use kubectl to get metrics
 kubectl top pods -n kube-system
+
 ```
 
 <!-- ## 3. Deploy Metrics server (HELM) -->
@@ -131,91 +111,71 @@ helm install metrics bitnami/metrics-server \
 --values values.yaml
 ``` -->
 
-<!-- ## 3. Install Vertical Pod Autoscaler
+## 4. Install Vertical Pod Autoscaler
 
-- Open Autoscaler GitHub [page](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
-
-- Clone VPA repo
 ```bash
+
+# Clone VPA repo
 git clone https://github.com/kubernetes/autoscaler.git
-```
 
-- Change directory
-```bash
+# Change directory
 cd autoscaler/vertical-pod-autoscaler
-```
-- Preview installation
-```bash
+
+# Preview installation
 ./hack/vpa-process-yamls.sh print
-```
-- Install VPA
-```bash
-./hack/vpa-up.sh
-```
 
-- Tear down VPA
-```bash
+# Install VPA
+./hack/vpa-up.sh
+
+# Tear down VPA
 ./hack/vpa-down.sh
-``` -->
 
-## 4. Upgrade LibreSSL on Mac/OS X
-
-- Get OpenSSL version
-```bash
-openssl version
 ```
 
-- Upgrade LibreSSL with Homebew
+## 5. Upgrade LibreSSL on Mac/OS X (if needed)
+
+
 ```bash
+
+# Get OpenSSL version
+openssl version
+
+# Upgrade LibreSSL with Homebew
 brew install libressl
-```
 
-- Get OpenSSL version
-```bash
+# Get OpenSSL version
 openssl version
-```
 
-- Check instalation path of OpenSSL
-```bash
+# Check instalation path of OpenSSL
 which openssl
-```
 
-- Check version of the LibreSSL installed with Homebew
-```bash
+# Check version of the LibreSSL installed with Homebew
 /opt/homebrew/opt/libressl/bin/openssl version
-```
 
-- Try to create a soft link
-```bash
+# Try to create a soft link
 sudo ln -s /opt/homebrew/opt/libressl/bin/openssl /usr/bin/openssl
-```
 
-- Try to rename openssl
-```bash
+# Try to rename openssl
 sudo mv /usr/bin/openssl /usr/bin/openssl-old
-```
 
-- Create soft link to /usr/local/bin/ which should take precedence on your path over /usr/bin.
-```bash
+# Create soft link to /usr/local/bin/ which should take precedence on your path over /usr/bin.
 sudo ln -s /opt/homebrew/opt/libressl/bin/openssl /usr/local/bin/openssl
-```
 
-- Open new tab and run version command
-```bash
+# Open new tab and run version command
 openssl version
 ```
 
-<!-- ## 5. Install Vertical Pod Autoscaler (Continue)
+## 5. Install Vertical Pod Autoscaler (Continue)
 
-- Open new tab and change directory
 ```bash
+
+# Open new tab and change directory
 cd autoscaler/vertical-pod-autoscaler
-```
 
-- Install VPA
-```bash
+# Install VPA
 ./hack/vpa-up.sh
-``` -->
+
+```
 
 <!-- ## 6. Demo (or Workloads)
 - Create deployment files under `1-demo` directory
