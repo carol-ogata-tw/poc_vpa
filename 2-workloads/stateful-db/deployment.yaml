@@ -1,15 +1,10 @@
----
 # =========================================================================
-# Workload 4: Stateful Database
+# Workload 4: Stateful Database (Corrected)
 #
-# Type: StatefulSet
-# Goal: To test VPA's ability to right-size a stateful workload and
-#       observe its restart behavior.
-# This deploys a single-replica PostgreSQL database that requires
-# persistent storage.
-# Pre-requisite: Your EKS cluster must have a default StorageClass
-# defined so it can provision a PersistentVolume.
+# This version includes the 'subPath' fix to avoid the initdb error.
 # =========================================================================
+
+# --- Headless Service (unchanged, but needed for the StatefulSet) ---
 apiVersion: v1
 kind: Service
 metadata:
@@ -24,6 +19,7 @@ spec:
   selector:
     app: postgres
 ---
+# --- StatefulSet (Corrected) ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -53,9 +49,6 @@ spec:
           value: "mysecretpassword" # Use secrets in a real environment
         - name: POSTGRES_DB
           value: "testdb"
-        # --- VPA TARGET ---
-        # VPA will observe the database's typical resource usage and
-        # recommend more appropriate values.
         resources:
           requests:
             cpu: "500m"
@@ -66,6 +59,11 @@ spec:
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
+          # --- THE FIX ---
+          # This 'subPath' tells Kubernetes to create a 'data' directory
+          # inside the volume and mount that instead of the volume's root.
+          # This avoids the 'lost+found' directory problem.
+          subPath: data
   volumeClaimTemplates:
   - metadata:
       name: postgres-storage
@@ -73,4 +71,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 2Gi # Request 2 GiB of persistent storage
+          storage: 2Gi

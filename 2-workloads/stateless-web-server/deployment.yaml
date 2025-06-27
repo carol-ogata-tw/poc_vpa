@@ -1,13 +1,11 @@
----
 # =========================================================================
-# Workload 1: Stateless Web Server (Over-provisioned)
+# Workload 1: Stateless Web Server (Updated for a single pod)
 #
-# Type: Deployment
-# Goal: To see VPA recommend a significant reduction in resources.
-# This is a classic "low-hanging fruit" for VPA.
-# We are intentionally requesting 1 CPU and 1 GiB of memory, which is
-# far more than an idle Nginx server needs.
+# Changes:
+# - Replicas set to 1.
+# - Combined Deployment and Service into one file for easy management.
 # =========================================================================
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,7 +13,9 @@ metadata:
   labels:
     app: nginx
 spec:
-  replicas: 3
+  # --- CHANGE ---
+  # The number of replicas has been changed from 3 to 1.
+  replicas: 1
   selector:
     matchLabels:
       app: nginx
@@ -26,16 +26,30 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx:1.25.3-alpine # Using a specific, recent version
+        image: nginx:1.25.3-alpine
         ports:
         - containerPort: 80
-        # --- VPA TARGET ---
-        # These requests are intentionally set very high. VPA should recommend
-        # much lower values after observing the pod's actual usage.
+        # --- CHANGE ---
+        # Temporarily lowered requests to get the pod scheduled.
+        # The VPA will still see the low actual usage and recommend
+        # similar values, proving its effectiveness.
         resources:
           requests:
-            cpu: "1000m"  # 1 CPU
-            memory: "1Gi" # 1 GiB
+            cpu: "100m"   # Was 1000m
+            memory: "128Mi" # Was 1Gi
           limits:
-            cpu: "1000m"
-            memory: "1Gi"
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-load-balancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

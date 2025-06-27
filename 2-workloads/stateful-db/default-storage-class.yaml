@@ -1,0 +1,22 @@
+# This file defines our default StorageClass
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  # This annotation makes this StorageClass the default for any
+  # PersistentVolumeClaim that doesn't specify one.
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+  name: gp3-default
+# This tells Kubernetes to use the AWS EBS CSI driver to create volumes.
+provisioner: ebs.csi.aws.com
+# We are using the 'gp3' volume type, which is modern and cost-effective.
+parameters:
+  type: gp3
+# This ensures that the volume is deleted when the PersistentVolumeClaim is deleted.
+# For a POC, this is good practice to avoid leftover EBS volumes.
+reclaimPolicy: Delete
+# This allows the volume to be expanded if needed later.
+allowVolumeExpansion: true
+# This ensures pods are scheduled only after the volume is created and ready.
+volumeBindingMode: WaitForFirstConsumer

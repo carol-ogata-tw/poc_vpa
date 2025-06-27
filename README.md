@@ -20,37 +20,47 @@ kubectl get svc
 
 # Add the Datadog Helm repository
 helm repo add datadog https://helm.datadoghq.com 
-helm repo update OK
+helm repo update 
 
 # Create a namespace for Datadog (optional, but recommended):
 kubectl create namespace datadog 
 
 # Create your configuration file values.yaml
 kubectl create secret generic datadog-secret \
---from-literal api-key='xxx' \
---from-literal app_key='xxx' \
+--from-literal api-key='d2b0cab559a0e002b05b35cb010e7f65' \
+--from-literal app_key='5f3f29db31b9b899311cf368160b3bc0a98625af' \
 -n datadog
 
-# Install the Datadog Agent using Helm
+# # Install the agent using your values.yaml file
 helm install datadog-agent datadog/datadog \
-  --namespace datadog --create-namespace \
+  -n datadog \
   -f values.yaml
 
-# Upgrade the apiKey
-helm upgrade datadog-agent \
-        --set datadog.apiKey='xxxx' datadog/datadog\
-        --namespace datadog
+# # Install the Datadog Agent using Helm
+# helm install datadog-agent datadog/datadog \
+#   --namespace datadog --create-namespace \
+#   -f values.yaml
 
-# You can verify that everything is running:
+# # Upgrade the apiKey
+# helm upgrade datadog-agent \
+#         --set datadog.apiKey='d2b0cab559a0e002b05b35cb010e7f65' datadog/datadog\
+#         --namespace datadog
+
+# # Upgrade the appKey
+# helm upgrade datadog-agent \
+#         --set datadog.appKey='5f3f29db31b9b899311cf368160b3bc0a98625af' datadog/datadog\
+#         --namespace datadog
+
+
+# You can verify that everything is running
 kubectl get pods -n datadog
 
-# Also check logs if needed:
+# Also check logs if needed
 kubectl logs -f daemonset/datadog-agent -n datadog
 
 ```
 
 ## 3. Deploy Metrics server (YAML)
-
 
 ```bash
 
@@ -210,11 +220,17 @@ kubectl apply -f 1-demo/0-deployment.yaml
 ## 7. Workloads
 
 - Deploy cpu-batch-job workload
+
 ```bash
+
 kubectl apply -f 2-workloads/cpu-batch-job/pi-cronjob.yaml
+
+kubectl apply -f 2-workloads/cpu-batch-job/pi-job-vpa.yaml
+
 ```
 
 - Build, push the image and deploy memory-leak-app
+
 ```bash
 docker build -t poc-ecr/memory-leak-app:latest .
 docker push poc-ecr/memory-leak-app:latest 
@@ -222,19 +238,31 @@ docker push poc-ecr/memory-leak-app:latest
 kubectl apply -f 2-workloads/memory-leak-app/deployment.yaml
 ```
 
-- Deploy Stateful-db
+- Deploy stateful-db
+
 ```bash
+
 kubectl apply -f 2-workloads/stateful-db/deployment.yaml
+
+kubectl apply -f 2-workloads/stateful-db/postgres-db-vpa.yaml
+
 ```
 
-- Deploy Stateless-web-server
+- Deploy stateless-web-server
+
 ```bash
+
+# deploy the Deployment and the Service
 kubectl apply -f 2-workloads/stateless-web-server/deployment.yaml
+
+kubectl apply -f 2-workloads/stateless-web-server/nginx-vpa.yaml
+
 ```
 
 # VPAs
 
 ## Clean Up
+
 - Delete EKS cluster
 ```
 eksctl delete cluster -f eks.yaml
