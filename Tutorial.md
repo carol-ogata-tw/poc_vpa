@@ -27,8 +27,8 @@ kubectl create namespace datadog
 
 # Create your configuration file values.yaml
 kubectl create secret generic datadog-secret \
---from-literal api-key='d2b0cab559a0e002b05b35cb010e7f65' \
---from-literal app_key='5f3f29db31b9b899311cf368160b3bc0a98625af' \
+--from-literal api-key='' \
+--from-literal app_key='' \
 -n datadog
 
 # # Install the agent using your values.yaml file
@@ -43,12 +43,12 @@ helm install datadog-agent datadog/datadog \
 
 # # Upgrade the apiKey
 # helm upgrade datadog-agent \
-#         --set datadog.apiKey='d2b0cab559a0e002b05b35cb010e7f65' datadog/datadog\
+#         --set datadog.apiKey='' datadog/datadog\
 #         --namespace datadog
 
 # # Upgrade the appKey
 # helm upgrade datadog-agent \
-#         --set datadog.appKey='5f3f29db31b9b899311cf368160b3bc0a98625af' datadog/datadog\
+#         --set datadog.appKey='' datadog/datadog\
 #         --namespace datadog
 
 
