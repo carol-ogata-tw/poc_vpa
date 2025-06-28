@@ -24,7 +24,7 @@ eksctl create iamserviceaccount \
 eksctl create addon \
   --name aws-ebs-csi-driver \
   --cluster my-cluster \
-  --service-account-role-arn arn:aws:iam::682033465953:role/AmazonEKS_EBS_CSI_DriverRole \
+  --service-account-role-arn arn:aws:iam::111222333444:role/AmazonEKS_EBS_CSI_DriverRole \
   --force
 
 ````

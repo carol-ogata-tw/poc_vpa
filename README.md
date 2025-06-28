@@ -27,8 +27,8 @@ kubectl create namespace datadog
 
 # Create your configuration file values.yaml
 kubectl create secret generic datadog-secret \
---from-literal api-key='d2b0cab559a0e002b05b35cb010e7f65' \
---from-literal app_key='5f3f29db31b9b899311cf368160b3bc0a98625af' \
+--from-literal api-key='XXXX' \
+--from-literal app-key='XXXX' \
 -n datadog
 
 # # Install the agent using your values.yaml file
@@ -43,12 +43,12 @@ helm install datadog-agent datadog/datadog \
 
 # # Upgrade the apiKey
 # helm upgrade datadog-agent \
-#         --set datadog.apiKey='d2b0cab559a0e002b05b35cb010e7f65' datadog/datadog\
+#         --set datadog.apiKey='XXXX' datadog/datadog\
 #         --namespace datadog
 
 # # Upgrade the appKey
 # helm upgrade datadog-agent \
-#         --set datadog.appKey='5f3f29db31b9b899311cf368160b3bc0a98625af' datadog/datadog\
+#         --set datadog.appKey='XXXX' datadog/datadog\
 #         --namespace datadog
 
 
@@ -60,7 +60,7 @@ kubectl logs -f daemonset/datadog-agent -n datadog
 
 ```
 
-## 3. Deploy Metrics server (YAML)
+## 3. Deploy Metrics server (if needed)
 
 ```bash
 
@@ -72,6 +72,8 @@ kubectl get apiservice | grep metrics
 
 # Use kubectl to get metrics
 kubectl top pods -n kube-system
+# In case of 'error: Metrics API not available', run:
+# kubectl patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
 
 # Access metrics API
 kubectl get --raw /apis/metrics.k8s.io/v1beta1 | jq
@@ -219,17 +221,29 @@ kubectl apply -f 1-demo/0-deployment.yaml
 
 ## 7. Workloads
 
-- Deploy cpu-batch-job workload
+### 1. cpu-batch-job workload
+#### Deploy cpu-batch-job workload
 
 ```bash
 
-kubectl apply -f 2-workloads/cpu-batch-job/pi-cronjob.yaml
+# Apply the CronJob
+kubectl apply -f 2-workloads/stateless-jobs/pi-cronjob.yaml
 
-kubectl apply -f 2-workloads/cpu-batch-job/pi-job-vpa.yaml
+# Apply the VPA
+kubectl apply -f 2-workloads/stateless-jobs/pi-job-vpa.yaml
+
+# Verify the CronJob
+kubectl get cronjob pi-calculation-cronjob
+kubectl get pods
+
+# Verify the VPA
+kubectl describe vpa pi-job-vpa
+
 
 ```
 
-- Build, push the image and deploy memory-leak-app
+### 2. memory-leak-app workload
+#### Build, push the image and deploy memory-leak-app
 
 ```bash
 docker build -t poc-ecr/memory-leak-app:latest .
@@ -238,24 +252,49 @@ docker push poc-ecr/memory-leak-app:latest
 kubectl apply -f 2-workloads/memory-leak-app/deployment.yaml
 ```
 
-- Deploy stateful-db
+### 3. stateful-db workload
+
+- Prerequisites:
+  - First you'll need to enable IAM OIDC for the EKS cluster. Please refer to [this guide](./2-workloads/stateful-db/README.md)
 
 ```bash
 
+# Apply the statefulset
 kubectl apply -f 2-workloads/stateful-db/deployment.yaml
 
+# Apply the vpa
 kubectl apply -f 2-workloads/stateful-db/postgres-db-vpa.yaml
+
+# Verify the statefulset
+kubectl get statefulset postgres-db
+kubectl get pods
+
+# Verify the VPA
+kubectl describe vpa postgres-db-vpa
+
 
 ```
 
-- Deploy stateless-web-server
+### 4. stateless-web-server workload
 
 ```bash
 
-# deploy the Deployment and the Service
-kubectl apply -f 2-workloads/stateless-web-server/deployment.yaml
+# Apply the Deployment and Service
+kubectl apply -f 2-workloads/stateless-web/deployment.yaml
 
-kubectl apply -f 2-workloads/stateless-web-server/nginx-vpa.yaml
+# Apply the VPA
+kubectl apply -f 2-workloads/stateless-web/nginx-vpa.yaml
+
+# Verify the Deployment
+kubectl get deployment stateless-nginx
+kubectl get pods
+
+# Verify the Service
+kubectl get svc nginx-load-balancer
+
+# Verify the VPA
+kubectl describe vpa nginx-vpa
+
 
 ```
 
