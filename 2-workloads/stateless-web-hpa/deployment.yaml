@@ -1,0 +1,92 @@
+# =========================================================================
+# Workload 5: Stateless Web Server with HPA
+#
+# Goal: To observe VPA recommendations on a workload that is being
+#       horizontally scaled by an HPA. This demonstrates how VPA can
+#       provide right-sizing insights without interfering with HPA.
+#
+# This manifest contains all four necessary components:
+# 1. Deployment: An Apache server with a PHP page that consumes CPU.
+# 2. Service: A LoadBalancer to expose the service to traffic.
+# 3. HorizontalPodAutoscaler: Scales pods out when CPU usage exceeds 50%.
+# 4. VerticalPodAutoscaler: Watches the pods and provides recommendations.
+# =========================================================================
+
+# --- 1. The Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache-hpa
+spec:
+  selector:
+    matchLabels:
+      run: php-apache-hpa
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: php-apache-hpa
+    spec:
+      containers:
+      - name: php-apache
+        # This image is specifically designed for HPA demos.
+        # Accessing it runs a CPU-intensive script.
+        image: k8s.gcr.io/hpa-example
+        ports:
+        - containerPort: 80
+        # IMPORTANT: HPA calculates utilization based on the request.
+        # We are requesting 200m (0.2 CPU cores).
+        resources:
+          requests:
+            cpu: 200m
+          limits:
+            cpu: 500m
+---
+# --- 2. The Service ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache-hpa-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    run: php-apache-hpa
+---
+# --- 3. The Horizontal Pod Autoscaler (HPA) ---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache-hpa
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        # If average CPU usage across all pods exceeds 50% of the
+        # requested 200m, the HPA will create more pods.
+        averageUtilization: 50
+---
+# --- 4. The Vertical Pod Autoscaler (VPA) ---
+apiVersion: "autoscaling.k8s.io/v1"
+kind: VerticalPodAutoscaler
+metadata:
+  name: php-apache-vpa-test
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind:       Deployment
+    name:       php-apache-hpa
+  updatePolicy:
+    # This is key: VPA will only provide recommendations and will NOT
+    # restart or change the pods, letting the HPA manage them.
+    updateMode: "Off"

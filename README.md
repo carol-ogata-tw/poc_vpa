@@ -27,14 +27,14 @@ kubectl create namespace datadog
 
 # Create your configuration file values.yaml
 kubectl create secret generic datadog-secret \
---from-literal api-key='XXXX' \
---from-literal app-key='XXXX' \
+--from-literal api-key='e38cc5df46d8d253efcd2b45fe11501a' \
+--from-literal app-key='f21d3178f3bbfb802c884e926fb76cf245a84dec' \
 -n datadog
 
 # # Install the agent using your values.yaml file
 helm install datadog-agent datadog/datadog \
   -n datadog \
-  -f values.yaml
+  -f datadog/values.yaml
 
 # # Install the Datadog Agent using Helm
 # helm install datadog-agent datadog/datadog \
@@ -295,6 +295,28 @@ kubectl get svc nginx-load-balancer
 # Verify the VPA
 kubectl describe vpa nginx-vpa
 
+
+```
+
+### 5. stateless-web-hpa workload
+
+```bash
+
+# Apply the Deployment, Service, HPA and VPA
+kubectl apply -f 2-workloads/stateless-web-hpa/deployment.yaml
+
+# Get the Service URL
+kubectl get service php-apache-hpa-service
+
+# Generate Load - Replace YOUR_LOAD_BALANCER_URL with the URL from the previous step
+while true; do wget -q -O- http://YOUR_LOAD_BALANCER_URL; done
+
+# Observe the HPA in Action 
+# You will see the TARGETS go above 50% and the REPLICAS count increase from 1 up to 10.
+kubectl get hpa -w
+
+# Check the VPA Recommendation
+kubectl describe vpa php-apache-vpa
 
 ```
 
