@@ -27,8 +27,8 @@ kubectl create namespace datadog
 
 # Create your configuration file values.yaml
 kubectl create secret generic datadog-secret \
---from-literal api-key='e38cc5df46d8d253efcd2b45fe11501a' \
---from-literal app-key='f21d3178f3bbfb802c884e926fb76cf245a84dec' \
+--from-literal api-key='xxx' \
+--from-literal app-key='xxx' \
 -n datadog
 
 # # Install the agent using your values.yaml file
@@ -319,6 +319,7 @@ kubectl get hpa -w
 kubectl describe vpa php-apache-vpa
 
 ```
+
 
 # VPAs
 
