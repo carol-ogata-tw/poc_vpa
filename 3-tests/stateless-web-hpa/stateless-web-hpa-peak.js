@@ -21,7 +21,7 @@ export const options = {
       startVUs: 10,
       stages: [
         // Ramp up to a high number of users and hold it
-        { duration: '2m', target: 100 },
+        { duration: '2m', target: 500 },
         { duration: '10m', target: 500 },
         { duration: '1m', target: 0 }, // Ramp down at the end
       ],

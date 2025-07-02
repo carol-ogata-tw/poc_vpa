@@ -13,7 +13,7 @@ managedNodeGroups:
   labels:
     role: general
   instanceType: t3.medium
-  minSize: 1
+  minSize: 2
   maxSize: 10
-  desiredCapacity: 1
+  desiredCapacity: 2
   volumeSize: 20

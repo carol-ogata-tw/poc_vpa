@@ -27,8 +27,8 @@ kubectl create namespace datadog
 
 # Create your configuration file values.yaml
 kubectl create secret generic datadog-secret \
---from-literal api-key='xxx' \
---from-literal app-key='xxx' \
+--from-literal api-key='XXXX' \
+--from-literal app-key='XXXX' \
 -n datadog
 
 # # Install the agent using your values.yaml file

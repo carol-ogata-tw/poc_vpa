@@ -20,7 +20,7 @@ export const options = {
   scenarios: {
     baseline_scenario: {
       executor: 'constant-vus',
-      vus: 50, // A very low number of virtual users
+      vus: 10, // A very low number of virtual users
       duration: '10m', // Run for 10 minutes
     },
   },

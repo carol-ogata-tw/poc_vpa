@@ -77,16 +77,16 @@ spec:
         averageUtilization: 50
 ---
 # --- 4. The Vertical Pod Autoscaler (VPA) ---
-apiVersion: "autoscaling.k8s.io/v1"
-kind: VerticalPodAutoscaler
-metadata:
-  name: php-apache-vpa-test
-spec:
-  targetRef:
-    apiVersion: "apps/v1"
-    kind:       Deployment
-    name:       php-apache-hpa
-  updatePolicy:
-    # This is key: VPA will only provide recommendations and will NOT
-    # restart or change the pods, letting the HPA manage them.
-    updateMode: "Off"
+# apiVersion: "autoscaling.k8s.io/v1"
+# kind: VerticalPodAutoscaler
+# metadata:
+#   name: php-apache-vpa-test
+# spec:
+#   targetRef:
+#     apiVersion: "apps/v1"
+#     kind:       Deployment
+#     name:       php-apache-hpa
+#   updatePolicy:
+#     # This is key: VPA will only provide recommendations and will NOT
+#     # restart or change the pods, letting the HPA manage them.
+#     updateMode: "Off"
